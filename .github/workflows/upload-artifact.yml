@@ -1,0 +1,24 @@
+name: Upload Linux x86_64 artifact
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  upload-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Upload cpp-mcp Linux x86_64 archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-mcp-linux-x86_64
+          path: |
+            cpp-mcp-linux-x86_64.tar.gz
+            src/cpp-mcp-linux-x86_64.tar.gz
+          if-no-files-found: error
+          retention-days: 90
