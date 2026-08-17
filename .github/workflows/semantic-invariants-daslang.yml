@@ -24,20 +24,26 @@ jobs:
           mkdir -p /tmp/cpp-mcp
           tar -xzf cpp-mcp-linux-x86_64.tar.gz -C /tmp/cpp-mcp
           file /tmp/cpp-mcp/cpp-mcp/bin/cpp-mcp
-      - name: Clone daScript history
+      - name: Clone daScript history and materialize AST slice
         run: |
           git clone --filter=blob:none --single-branch --no-tags --no-checkout --depth=15000 \
             https://github.com/GaijinEntertainment/daScript.git /tmp/dascript
           git -C /tmp/dascript rev-list --count HEAD
+          git -C /tmp/dascript checkout HEAD -- src/ast include/daScript/ast
       - name: Mine core compiler/runtime regressions and map frozen C taxonomy
         env:
           DAS_REPO: /tmp/dascript
           TARGET: '350'
         run: python3 analysis/daslang_transfer_v5.py
-      - name: Exercise cpp-mcp JSON-RPC
+      - name: Install ast-grep
+        run: |
+          npm install -g @ast-grep/cli
+          sg --version
+      - name: Exercise MCP source intelligence on current daScript core
         env:
           CPP_MCP_BUNDLE: /tmp/cpp-mcp/cpp-mcp
-        run: python3 analysis/mcp_probe.py
+          DAS_TARGET: /tmp/dascript/src/ast/ast.cpp
+        run: python3 analysis/mcp_source_probe.py
       - uses: actions/upload-artifact@v4
         with:
           name: semantic-invariants-daslang-core-results
