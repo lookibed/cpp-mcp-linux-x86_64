@@ -1,0 +1,36 @@
+name: semantic-invariants-daslang
+
+on:
+  push:
+    branches:
+      - experiment/semantic-invariants-20260817
+    paths:
+      - '.github/workflows/semantic-invariants-daslang.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect archive
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/cpp-mcp
+          tar -xzf cpp-mcp-linux-x86_64.tar.gz -C /tmp/cpp-mcp
+          find /tmp/cpp-mcp -maxdepth 3 -type f -printf '%p\n' | sort
+          echo '--- executable files ---'
+          find /tmp/cpp-mcp -maxdepth 3 -type f -perm -111 -printf '%p\n' | sort
+      - name: Probe CLI
+        run: |
+          set -uxo pipefail
+          exe=$(find /tmp/cpp-mcp -maxdepth 3 -type f -perm -111 | head -1)
+          echo "EXE=$exe"
+          file "$exe" || true
+          "$exe" --help 2>&1 | head -200 || true
+          "$exe" -h 2>&1 | head -200 || true
+          "$exe" --version 2>&1 | head -100 || true
