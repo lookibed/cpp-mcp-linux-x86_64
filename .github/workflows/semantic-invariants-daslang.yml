@@ -17,20 +17,19 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect archive
+      - name: Inspect archive and embedded docs
         run: |
           set -euxo pipefail
           mkdir -p /tmp/cpp-mcp
           tar -xzf cpp-mcp-linux-x86_64.tar.gz -C /tmp/cpp-mcp
-          find /tmp/cpp-mcp -maxdepth 3 -type f -printf '%p\n' | sort
-          echo '--- executable files ---'
-          find /tmp/cpp-mcp -maxdepth 3 -type f -perm -111 -printf '%p\n' | sort
-      - name: Probe CLI
+          echo '--- embedded README ---'
+          cat /tmp/cpp-mcp/cpp-mcp/README.md || true
+          echo '--- top-level payload ---'
+          find /tmp/cpp-mcp/cpp-mcp -maxdepth 2 -type f -printf '%p\n' | sort | head -250
+          echo '--- executable ---'
+          file /tmp/cpp-mcp/cpp-mcp/bin/cpp-mcp
+      - name: Probe MCP protocol strings
         run: |
-          set -uxo pipefail
-          exe=$(find /tmp/cpp-mcp -maxdepth 3 -type f -perm -111 | head -1)
-          echo "EXE=$exe"
-          file "$exe" || true
-          "$exe" --help 2>&1 | head -200 || true
-          "$exe" -h 2>&1 | head -200 || true
-          "$exe" --version 2>&1 | head -100 || true
+          set -euxo pipefail
+          exe=/tmp/cpp-mcp/cpp-mcp/bin/cpp-mcp
+          strings "$exe" | grep -E -i 'tools/list|tools/call|initialize|stdio|transport|project|workspace|compile|daslang|tree.?sitter|outline|diagnostic|symbol|reference' | sort -u | head -300 || true
