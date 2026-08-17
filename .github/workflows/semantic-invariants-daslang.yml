@@ -33,7 +33,7 @@ jobs:
         env:
           DAS_REPO: /tmp/dascript
           TARGET: '350'
-        run: python3 analysis/daslang_transfer.py
+        run: python3 analysis/daslang_transfer_v2.py
       - name: Exercise cpp-mcp JSON-RPC
         env:
           CPP_MCP_BUNDLE: /tmp/cpp-mcp/cpp-mcp
