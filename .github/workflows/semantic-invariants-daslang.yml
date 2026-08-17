@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  transfer:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Unpack MCP bundle
@@ -24,7 +24,23 @@ jobs:
           mkdir -p /tmp/cpp-mcp
           tar -xzf cpp-mcp-linux-x86_64.tar.gz -C /tmp/cpp-mcp
           file /tmp/cpp-mcp/cpp-mcp/bin/cpp-mcp
-      - name: Exercise JSON-RPC and list tools
+      - name: Clone daScript history
+        run: |
+          git clone --filter=blob:none --single-branch --no-tags --no-checkout --depth=15000 \
+            https://github.com/GaijinEntertainment/daScript.git /tmp/dascript
+          git -C /tmp/dascript rev-list --count HEAD
+      - name: Mine historical Daslang regressions and map frozen C taxonomy
+        env:
+          DAS_REPO: /tmp/dascript
+          TARGET: '350'
+        run: python3 analysis/daslang_transfer.py
+      - name: Exercise cpp-mcp JSON-RPC
         env:
           CPP_MCP_BUNDLE: /tmp/cpp-mcp/cpp-mcp
         run: python3 analysis/mcp_probe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: semantic-invariants-daslang-results
+          path: analysis/out/
+          if-no-files-found: error
+          retention-days: 90
