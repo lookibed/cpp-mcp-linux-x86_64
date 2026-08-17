@@ -29,18 +29,18 @@ jobs:
           git clone --filter=blob:none --single-branch --no-tags --no-checkout --depth=15000 \
             https://github.com/GaijinEntertainment/daScript.git /tmp/dascript
           git -C /tmp/dascript rev-list --count HEAD
-      - name: Mine historical Daslang regressions and map frozen C taxonomy
+      - name: Mine core compiler/runtime regressions and map frozen C taxonomy
         env:
           DAS_REPO: /tmp/dascript
           TARGET: '350'
-        run: python3 analysis/daslang_transfer_v4.py
+        run: python3 analysis/daslang_transfer_v5.py
       - name: Exercise cpp-mcp JSON-RPC
         env:
           CPP_MCP_BUNDLE: /tmp/cpp-mcp/cpp-mcp
         run: python3 analysis/mcp_probe.py
       - uses: actions/upload-artifact@v4
         with:
-          name: semantic-invariants-daslang-results
+          name: semantic-invariants-daslang-core-results
           path: analysis/out/
           if-no-files-found: error
           retention-days: 90
