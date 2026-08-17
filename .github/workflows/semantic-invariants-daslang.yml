@@ -6,6 +6,7 @@ on:
       - experiment/semantic-invariants-20260817
     paths:
       - '.github/workflows/semantic-invariants-daslang.yml'
+      - 'analysis/**'
   workflow_dispatch:
 
 permissions:
@@ -17,19 +18,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect archive and embedded docs
+      - name: Unpack MCP bundle
         run: |
           set -euxo pipefail
           mkdir -p /tmp/cpp-mcp
           tar -xzf cpp-mcp-linux-x86_64.tar.gz -C /tmp/cpp-mcp
-          echo '--- embedded README ---'
-          cat /tmp/cpp-mcp/cpp-mcp/README.md || true
-          echo '--- top-level payload ---'
-          find /tmp/cpp-mcp/cpp-mcp -maxdepth 2 -type f -printf '%p\n' | sort | head -250
-          echo '--- executable ---'
           file /tmp/cpp-mcp/cpp-mcp/bin/cpp-mcp
-      - name: Probe MCP protocol strings
-        run: |
-          set -euxo pipefail
-          exe=/tmp/cpp-mcp/cpp-mcp/bin/cpp-mcp
-          strings "$exe" | grep -E -i 'tools/list|tools/call|initialize|stdio|transport|project|workspace|compile|daslang|tree.?sitter|outline|diagnostic|symbol|reference' | sort -u | head -300 || true
+      - name: Exercise JSON-RPC and list tools
+        env:
+          CPP_MCP_BUNDLE: /tmp/cpp-mcp/cpp-mcp
+        run: python3 analysis/mcp_probe.py
