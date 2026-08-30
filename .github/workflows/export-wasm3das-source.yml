@@ -1,0 +1,24 @@
+name: Export wasm3das source
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/export-wasm3das-source.yml'
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout wasm3das
+        uses: actions/checkout@v4
+        with:
+          repository: lookibed/wasm3das
+          path: wasm3das
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm3das-source
+          path: wasm3das/source
+          retention-days: 1
