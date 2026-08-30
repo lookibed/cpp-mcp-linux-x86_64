@@ -13,12 +13,55 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Upload cpp-mcp Linux x86_64 archives
+      - name: Prepare minimal daslang check bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf bundle
+          mkdir -p bundle
+          tar -xzf cpp-mcp-linux-x86_64.tar.gz -C bundle
+          cp overlay/utils/mcp/cpp_main.das bundle/cpp-mcp/utils/mcp/cpp_main.das
+          cp overlay/utils/mcp/registry_das_check.das bundle/cpp-mcp/utils/mcp/registry_das_check.das
+          tar -C bundle -czf cpp-mcp-das-check-linux-x86_64.tar.gz cpp-mcp
+
+      - name: Smoke-test daslang compile_check and lint tool registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/cpp_mcp_smoke.das <<'EOF'
+          options gen2
+          [export]
+          def main() {
+              let x : int = 1
+              if (x > 0) {
+                  print("ok\n")
+              }
+          }
+          EOF
+          {
+            printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+            printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"compile_check","arguments":{"file":"/tmp/cpp_mcp_smoke.das"}}}'
+            printf '%s\n' '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"lint","arguments":{"file":"/tmp/cpp_mcp_smoke.das"}}}'
+          } | bundle/cpp-mcp/bin/cpp-mcp --root "$PWD/bundle/cpp-mcp" > /tmp/cpp_mcp_smoke.out
+          grep -q '"name":"compile_check"' /tmp/cpp_mcp_smoke.out
+          grep -q '"name":"lint"' /tmp/cpp_mcp_smoke.out
+          grep -q 'Compilation OK.' /tmp/cpp_mcp_smoke.out
+          grep -q 'No lint issues.' /tmp/cpp_mcp_smoke.out
+
+      - name: Upload original cpp-mcp Linux x86_64 archives
         uses: actions/upload-artifact@v4
         with:
           name: cpp-mcp-linux-x86_64
           path: |
             cpp-mcp-linux-x86_64.tar.gz
             src/cpp-mcp-linux-x86_64.tar.gz
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload minimal daslang check bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpp-mcp-das-check-linux-x86_64
+          path: cpp-mcp-das-check-linux-x86_64.tar.gz
           if-no-files-found: error
           retention-days: 90
